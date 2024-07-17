@@ -8,6 +8,8 @@ import numpy as np
 
 from typing import Tuple
 
+from normalizing_flows.activations import ConcatELU
+
 class CouplingLayer(nn.Module):
 
     """Creates a Coupling Layer.
@@ -287,3 +289,40 @@ class LayerNormChannels(nn.Module):
         y = y * self.gamma + self.beta
 
         return y
+
+class GatedConv(nn.Module):
+
+    """A two layer convultional ResNet block with input gate.
+
+    Args:
+    ----
+        nn (_type_): _description_
+
+    """
+
+    def __init__(self, c_in: int, c_hidden: int):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            ConcatELU(),
+            nn.Conv2d(in_channels = 2 * c_in, out_channels = c_hidden, kernel_size = 3, padding = 1),
+            ConcatELU(),
+            nn.Conv2d(in_channels = 2 * c_hidden, out_channels = 2 * c_in, kernel_size = 1)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Performs a forward pass in the GatedConv block.
+
+        Args:
+        ----
+            x (torch.Tensor): input to the GatedConv block.
+
+        Returns:
+        -------
+            torch.Tensor: output from the GatedConv block.
+
+        """
+        out = self.net(x)
+        val, gate = out.chunk(2, dim = 1)
+        return x + val * torch.sigmoid(gate)
+
