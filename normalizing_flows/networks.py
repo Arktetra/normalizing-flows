@@ -3,53 +3,9 @@
 import torch
 import torch.nn as nn
 
-from normalizing_flows.layers import ConcatELU
+from normalizing_flows.activations import ConcatELU
+from normalizing_flows.layers import GatedConv
 from normalizing_flows.layers import LayerNormChannels
-
-class GatedConv(nn.Module):
-
-    """A two layer convultional ResNet block with input gate.
-
-    Args:
-    ----
-        in_channels(int): number of input channels.
-        c_hidden (int): number of hidden channels.
-
-    """
-
-    def __init__(self, in_channels: int, hidden_channels: int):
-        super().__init__()
-
-        self.net = nn.Sequential(
-            ConcatELU(),
-            nn.Conv2d(
-                in_channels = 2 * in_channels,
-                out_channels = hidden_channels,
-                kernel_size = 3, padding = 1
-            ),
-            ConcatELU(),
-            nn.Conv2d(
-                in_channels = 2 * hidden_channels,
-                out_channels = 2 * in_channels,
-                kernel_size = 1
-            )
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Performs a forward pass in the GatedConv block.
-
-        Args:
-        ----
-            x (torch.Tensor): input to the GatedConv block.
-
-        Returns:
-        -------
-            torch.Tensor: output from the GatedConv block.
-
-        """
-        out = self.net(x)
-        val, gate = out.chunk(2, dim = 1)
-        return x + val * torch.sigmoid(gate)
 
 class GatedConvNet(nn.Module):
 
