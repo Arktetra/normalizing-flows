@@ -70,7 +70,7 @@ class RealNVP(nn.Module):
 
         Returns:
         -------
-            Tuple[torch.Tensor, torch.Tensor]: Output sample in latent space, log determinant of the jacobian
+            Tuple[torch.Tensor, torch.Tensor]: Output sample in latent space, log determinant of the jacobian.
 
         """
         log_det_inv = 0
@@ -88,10 +88,15 @@ class RealNVP(nn.Module):
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Returns a sample in the data space.
 
+
         Args:
         ----
             shape (torch.Size): The shape of the input in the latent space.
             z_init (torch.Tensor, optional): An input from the latent space. Defaults to None.
+
+        Returns:
+        -------
+            Tuple[torch.Tensor, torch.Tensor]: Output sample in the data space and the log determinant of the jacobian.
 
         """
         if z_init is None:
@@ -105,6 +110,24 @@ class RealNVP(nn.Module):
             z, log_det_inv = self.layers[i](z, log_det_inv, self.masks[i], training = False)
 
         return z, log_det_inv
+
+    def log_loss(self, input: torch.Tensor) -> torch.Tensor:
+        """Returns the negative loglikelihood for the input from the data space.
+
+        Args:
+        ----
+            input (torch.tensor): Samples from the data space.
+
+        Returns:
+        -------
+            torch.Tensor: The negative loglikelihood loss.
+
+        """
+        z, log_det = self(input)
+        log_pz = self.base_dist.log_prob(z)
+        log_px = log_pz + log_det
+        nll = -log_px
+        return nll
 
     def training_step(
         self,
