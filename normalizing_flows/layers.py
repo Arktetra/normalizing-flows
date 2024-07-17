@@ -251,3 +251,39 @@ class VariationalDequantization(Dequantization):
 
         return z, log_det_inv
 
+class LayerNormChannels(nn.Module):
+
+    """A module for applying layer normalization across channels in an image.
+
+    Args:
+    ----
+        c (int): number of channels in the image.
+        eps (float): a small constant for numerical stability.
+
+    """
+
+    def __init__(self, c: int, eps: float = 1e-5):
+        super().__init__()
+        self.gamma = nn.Parameter(torch.ones(1, c, 1, 1))
+        self.beta = nn.Parameter(torch.zeros(1, c, 1, 1))
+        self.eps = eps
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Applies layer normalization across the channels of an image.
+
+        Args:
+        ----
+            x (torch.Tensor): input image.
+
+        Returns:
+        -------
+            torch.Tensor: normalized image.
+
+        """
+        mean = x.mean(dim = 1, keepdim = True)
+        var = x.var(dim = 1, unbiased = False, keepdim = True)
+
+        y = (x - mean) / torch.sqrt(var + self.eps)
+        y = y * self.gamma + self.beta
+
+        return y
