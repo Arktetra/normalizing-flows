@@ -55,3 +55,19 @@ class RealNVP(nn.Module):
                 device = device
             ) for _ in range(num_coupling_layers)
         ])
+        
+    def forward(self, z: torch.Tensor):
+        """Performs the forward pass for the real NVP.
+
+        Args:
+            z (torch.Tensor): The input sample.
+        """
+        
+        log_det_inv = 0
+        
+        for i in range(self.num_coupling_layers):
+            z, log_det_inv = self.layers[i](z, log_det_inv, self.masks[i])
+            
+        return z, log_det_inv
+        
+        
