@@ -58,7 +58,10 @@ class RealNVP(nn.Module):
             ) for _ in range(num_coupling_layers)
         ])
 
-    def forward(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        z: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Performs a forward pass of the RealNVP.
 
         Args:
@@ -78,7 +81,11 @@ class RealNVP(nn.Module):
         return z, log_det_inv
 
     @torch.no_grad()
-    def sample(self, shape: torch.Size, z_init: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(
+        self,
+        shape: torch.Size,
+        z_init: torch.Tensor = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Returns a sample in the data space.
 
         Args:
@@ -98,3 +105,62 @@ class RealNVP(nn.Module):
             z, log_det_inv = self.layers[i](z, log_det_inv, self.masks[i], training = False)
 
         return z, log_det_inv
+
+    def training_step(
+        self,
+        dataloader: torch.utils.data.DataLoader,
+        optimizer: torch.optim.Optimizer
+    ) -> torch.Tensor:
+        """Performs a single training step.
+
+        Args:
+        ----
+            dataloader (torch.utils.data.DataLoader): An instance of the PyTorch DataLoader.
+            optimizer (torch.optim.Optimizer): An optimizer for minimizing the loss.
+
+        Returns:
+        -------
+            torch.Tensor: The loss in the training step.
+
+        """
+        self.train()
+
+        train_loss = 0
+
+        for data in dataloader:
+            optimizer.zero_grad()
+
+            loss = self.log_loss(data.to(self.device))
+            loss.mean().backward()
+
+            optimizer.step()
+
+            train_loss += loss.mean()
+
+        return train_loss / len(dataloader)
+
+    def validation_step(
+        self,
+        dataloader: torch.utils.data.DataLoader
+    ) -> torch.Tensor:
+        """Performs a single validation step.
+
+        Args:
+        ----
+            dataloader (torch.utils.data.DataLoader): An instance of the PyTorch DataLoader.
+
+        Returns:
+        -------
+            torch.Tensor: The loss in the validation step
+
+        """
+        self.eval()
+
+        val_loss = 0
+
+        with torch.inference_mode():
+            for data in dataloader:
+                loss = self.log_loss(data.to(self.device))
+                val_loss += loss.mean()
+
+        return val_loss / len(dataloader)
