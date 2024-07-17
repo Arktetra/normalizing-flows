@@ -33,7 +33,10 @@ def train(
         "val_loss": []
     }
 
-    for epoch in tqdm(range(epochs)):
+    tepochs = tqdm(range(epochs))
+    for epoch in tepochs:
+        tepochs.set_description(f"Epoch {epoch + 1}")
+
         train_loss = model.training_step(
             train_dataloader,
             optimizer
@@ -43,11 +46,7 @@ def train(
             val_dataloader
         )
 
-        print(
-            f"{epoch + 1}/{epochs} | "
-            f"train_loss: {train_loss} | "
-            f"val_loss: {val_loss}"
-        )
+        tepochs.set_postfix(train_loss = train_loss.item(), val_loss = val_loss.item())
 
         results["train_loss"].append(train_loss)
         results["val_loss"].append(val_loss)
