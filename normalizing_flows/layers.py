@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 
-from normalizing_flows.layers import ConcatELU
+from normalizing_flows.activations import ConcatELU
 
 class CouplingLayer(nn.Module):
 
@@ -36,17 +36,17 @@ class CouplingLayer(nn.Module):
             nn.Tanh(),
         )
 
-        self.translate_nn = nn.Sequential(
-            nn.Linear(in_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, out_features),
-        )
+        # self.translate_nn = nn.Sequential(
+        #     nn.Linear(in_features, hidden_features),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_features, hidden_features),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_features, hidden_features),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_features, hidden_features),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_features, out_features),
+        # )
 
         self.to(device)
 
@@ -70,8 +70,8 @@ class CouplingLayer(nn.Module):
         """
         z_masked = mask * z
         reversed_mask = 1 - mask
-        s = self.scale_nn(z_masked)
-        t = self.translate_nn(z_masked)
+        s, t = self.scale_nn(z_masked).chunk(2)
+        # t = self.translate_nn(z_masked)
         s = s * reversed_mask
         t = t * reversed_mask
 
