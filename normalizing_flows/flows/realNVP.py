@@ -6,6 +6,8 @@ import torch.distributions as D
 
 from normalizing_flows.layers import CouplingLayer
 
+from typing import Tuple
+
 class RealNVP(nn.Module):
 
     """Creates a RealNVP.
@@ -55,19 +57,44 @@ class RealNVP(nn.Module):
                 device = device
             ) for _ in range(num_coupling_layers)
         ])
-        
-    def forward(self, z: torch.Tensor):
-        """Performs the forward pass for the real NVP.
+
+    def forward(self, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Performs a forward pass of the RealNVP.
 
         Args:
-            z (torch.Tensor): The input sample.
+        ----
+            z (torch.Tensor): The input sample from data space.
+
+        Returns:
+        -------
+            Tuple[torch.Tensor, torch.Tensor]: Output sample in latent space, log determinant of the jacobian
+
         """
-        
         log_det_inv = 0
-        
+
         for i in range(self.num_coupling_layers):
             z, log_det_inv = self.layers[i](z, log_det_inv, self.masks[i])
-            
+
         return z, log_det_inv
-        
-        
+
+    @torch.no_grad()
+    def sample(self, shape: torch.Size, z_init: torch.Tensor = None) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Returns a sample in the data space.
+
+        Args:
+        ----
+            shape (torch.Size): The shape of the input in the latent space.
+            z_init (torch.Tensor, optional): An input from the latent space. Defaults to None.
+
+        """
+        if z_init is None:
+            z = self.base_dist.sample(shape).to(self.device)
+        else:
+            z = z_init.to(self.device)
+
+        log_det_inv = 0
+
+        for i in range(self.num_coupling_layers)[::-1]:
+            z, log_det_inv = self.layers[i](z, log_det_inv, self.masks[i], training = False)
+
+        return z, log_det_inv
