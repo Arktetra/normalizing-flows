@@ -11,42 +11,17 @@ class CouplingLayer(nn.Module):
 
     Args:
     ----
-        in_features (int): The size of each input sample.
-        hidden_features (int): The size of the hidden layers.
-        out_features (int): The size of each output sample.
-        device (str): The device on which to compute. Can be "cpu" or "cuda"
+        network (nn.Module): the network to use inside the Coupling Layer.
+        device (str): the device on which to compute. Can be "cpu" or "cuda".
 
     """
 
     def __init__(
-        self, in_features: int, hidden_features: int, out_features: int, device: str
+        self, network: nn.Module, device: str
     ):
         super().__init__()
 
-        self.scale_nn = nn.Sequential(
-            nn.Linear(in_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, hidden_features),
-            nn.ReLU(),
-            nn.Linear(hidden_features, out_features),
-            nn.Tanh(),
-        )
-
-        # self.translate_nn = nn.Sequential(
-        #     nn.Linear(in_features, hidden_features),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_features, hidden_features),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_features, hidden_features),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_features, hidden_features),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_features, out_features),
-        # )
+        self.nn = network
 
         self.to(device)
 
@@ -70,8 +45,7 @@ class CouplingLayer(nn.Module):
         """
         z_masked = mask * z
         reversed_mask = 1 - mask
-        s, t = self.scale_nn(z_masked).chunk(2)
-        # t = self.translate_nn(z_masked)
+        s, t = self.nn(z_masked).chunk(2, dim = 1)
         s = s * reversed_mask
         t = t * reversed_mask
 
