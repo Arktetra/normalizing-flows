@@ -15,7 +15,7 @@ class VariationalDequantization(Dequantization):
     ----
         num_coupling_layers (int): The number of coupling layers in the variational
         dequantization.
-        network (int): The network to be used by the coupling layers.
+        network (nn.Module): The network to be used by the coupling layers.
         alpha (float): A small constant used for scaling the original input.
 
     """
@@ -24,6 +24,7 @@ class VariationalDequantization(Dequantization):
         super().__init__(alpha = alpha)
 
         self.num_coupling_layers = num_coupling_layers
+        self.layers = network
 
     def dequant(self, z: torch.Tensor, log_det_inv: torch.Tensor):
         """Performs dequantization on the input.
