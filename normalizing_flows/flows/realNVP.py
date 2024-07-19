@@ -15,9 +15,10 @@ class RealNVP(nn.Module):
 
     Args:
     ----
-        num_coupling_layers (int): The number of coupling layers in the RealNVP.
-        network (nn.Module): The neural network used inside the RealNVP.
-        device (str): The device to compute on. Can be "cpu" or "cuda"
+        num_coupling_layers (int): the number of coupling layers in the RealNVP.
+        network (nn.Module): the neural network used inside the RealNVP.
+        masks (torch.tensor): masks to use in the coupling layers.
+        device (str): the device to compute on. Can be "cpu" or "cuda"
 
     """
 
@@ -25,6 +26,7 @@ class RealNVP(nn.Module):
         self,
         num_coupling_layers: int,
         network: nn.Module,
+        masks: torch.tensor,
         device: str,
     ):
         super().__init__()
@@ -32,19 +34,20 @@ class RealNVP(nn.Module):
         self.num_coupling_layers = num_coupling_layers
         self.device = device
 
-        self.base_dist = D.independent.Independent(
-            D.normal.Normal(
-                loc=torch.tensor([0.0, 0.0], device=device),
-                scale=torch.tensor([1.0, 1.0], device=device),
-            ),
-            1,
+        # self.base_dist = D.independent.Independent(
+        #     D.normal.Normal(
+        #         loc=torch.tensor([0.0, 0.0], device=device),
+        #         scale=torch.tensor([1.0, 1.0], device=device),
+        #     ),
+        #     1,
+        # )
+
+        self.base_dist = D.normal.Normal(
+            loc = 0.0,
+            scale = 1.0
         )
 
-        self.masks = torch.tensor(
-            [[1, 0], [0, 1]] * (num_coupling_layers // 2),
-            dtype=torch.float32,
-            device=device,
-        )
+        self.masks = masks
 
         self.layers = nn.ModuleList(
             [
