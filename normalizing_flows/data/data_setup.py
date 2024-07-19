@@ -4,11 +4,12 @@ import torch
 
 from typing import Tuple, Sequence
 
+
 def create_dataloaders(
     dataset: torch.utils.data.Dataset,
     lengths: Sequence[int | float],
     batch_size: int = 256,
-    generator: torch.Generator = None
+    generator: torch.Generator = None,
 ) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
     """A function to create dataloaders.
 
@@ -19,7 +20,8 @@ def create_dataloaders(
 
     Returns:
     -------
-        Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]: train and validation dataloaders.
+        Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]: train and
+        validation dataloaders.
 
     """
     if not generator:
@@ -28,16 +30,11 @@ def create_dataloaders(
         train_set, val_set = torch.utils.data.random_split(dataset, lengths, generator)
 
     train_loader = torch.utils.data.DataLoader(
-        train_set,
-        batch_size = batch_size,
-        shuffle = True
+        train_set, batch_size=batch_size, shuffle=True
     )
 
     val_loader = torch.utils.data.DataLoader(
-        val_set,
-        batch_size = batch_size,
-        shuffle = True
+        val_set, batch_size=batch_size, shuffle=True
     )
 
     return train_loader, val_loader
-
