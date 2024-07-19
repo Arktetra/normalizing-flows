@@ -46,7 +46,7 @@ class GatedConvNet(nn.Module):
                     in_channels= hidden_channels,
                     hidden_channels = hidden_channels
                 ),
-                LayerNormChannels(c = hidden_channels)
+                LayerNormChannels(in_channels = hidden_channels)
             ]
 
         layers += [
