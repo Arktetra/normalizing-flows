@@ -45,7 +45,7 @@ def train(
 
         if train_loss < loss and checkpoint_path is not None:
             loss = train_loss
-            torch.save(model.state_dict, checkpoint_path)
+            torch.save(model.state_dict(), checkpoint_path)
 
         val_loss = model.validation_step(val_dataloader)
 
