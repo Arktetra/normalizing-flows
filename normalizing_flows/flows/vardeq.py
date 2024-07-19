@@ -7,6 +7,8 @@ import numpy as np
 
 from normalizing_flows.flows.dequantization import Dequantization
 
+from typing import Tuple
+
 class VariationalDequantization(Dequantization):
 
     """A module for performing variational dequantization.
@@ -26,7 +28,44 @@ class VariationalDequantization(Dequantization):
         self.num_coupling_layers = num_coupling_layers
         self.layers = network
 
-    def dequant(self, z: torch.Tensor, log_det_inv: torch.Tensor):
+    def forward(
+        self,
+        z: torch.Tensor,
+        log_det_inv: torch.Tensor,
+        mask: torch.Tensor,
+        reverse: bool = False
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Performs the forward pass of dequantization.
+
+        Args:
+        ----
+            z (torch.Tensor): an input consisting of discrete values in forward flow and
+            dequantized values in reversed flow.
+            log_det_inv (torch.Tensor): the log of the determinant of the Jacobian from
+            the previous invertible function.
+            mask (torch.tensor): mask to apply.
+            reverse (bool, optional): the direction of the flow. Defaults to False.
+
+        Returns:
+        -------
+            Tuple[torch.Tensor, torch.Tensor]: output consisting of dequantized values
+            in forward flow and discrete values in
+            reversed flow, and the log of the determinant of the Jacobian of the current
+            invertible function.
+
+        """
+        if not reverse:
+            z, log_det_inv = self.dequant(z, log_det_inv, mask)
+            z, log_det_inv = self.sigmoid(z, log_det_inv, invert=True)
+        else:
+            z, log_det_inv = self.sigmoid(z, log_det_inv, invert=False)
+            z = z * self.quants
+            log_det_inv += np.log(self.quants) * np.prod(z.shape[1:])
+            z = torch.floor(z).clamp(min=0, max=self.quants - 1).to(torch.int32)
+
+        return z, log_det_inv
+
+    def dequant(self, z: torch.Tensor, log_det_inv: torch.Tensor,  mask: torch.tensor,):
         """Performs dequantization on the input.
 
         Args:
@@ -47,7 +86,7 @@ class VariationalDequantization(Dequantization):
         deq_noise, log_det_inv = self.sigmoid(z, log_det_inv, invert = True)
 
         for i in range(self.num_coupling_layers):
-            deq_noise, log_det_inv = self.layers[i](deq_noise, log_det_inv, reverse = False)
+            deq_noise, log_det_inv = self.layers[i](deq_noise, log_det_inv, mask, reverse = False)
 
         deq_noise, log_det_inv = self.sigmoid(deq_noise, log_det_inv, invert = False)
 
